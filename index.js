@@ -1,6 +1,6 @@
 /*
- * node-wakame
+ * node-trigger
  * @author exabugs@gmail.com
  */
 
-//module.exports = require('./lib/mecab');
+module.exports = require('./lib/trigger');

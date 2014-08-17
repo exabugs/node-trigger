@@ -136,8 +136,13 @@ Trigger.prototype.connect = function (address, callback) {
   var client = new websocket.client();
   client.connect('ws://' + address + '/');
   client.on('connect', function (conn) {
+
+
+    // todo
     // addresses 情報として保存しておく
     conn.address = address;
+
+
     self.insert(conn);
     callback && callback(null);
   });
@@ -167,7 +172,7 @@ Trigger.prototype.close = function (callback) {
     next(null);
   }, function (err) {
     self.server && self.server.close();
-    callback(err);
+    callback && callback(err);
   });
 };
 

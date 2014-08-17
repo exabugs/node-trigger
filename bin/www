@@ -1,3 +1,17 @@
-var server = require('../lib/server');
+"use strict";
+
+var http = require('http');
+var Trigger = require('../lib/trigger');
 var port = process.env.PORT || 8005;
 
+var trigger = new Trigger();
+
+http.createServer().listen(port, function () {
+
+  trigger.listen(this);
+
+  trigger.on('message', function (msg) {
+    console.log(msg);
+  })
+
+});

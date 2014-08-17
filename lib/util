@@ -24,3 +24,20 @@ module.exports.getLocalAddress = function() {
   }
   return ifacesObj;
 };
+
+/**
+ *
+ * @param n
+ * @returns {string}
+ */
+module.exports.randobet = function(n) {
+  var a = '0123456789'
+    + 'abcdefghijklmnopqrstuvwxyz'
+    + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  a = a.split('');
+  var s = '';
+  for (var i = 0; i < n; i++) {
+    s += a[Math.floor(Math.random() * a.length)];
+  }
+  return s;
+};

@@ -4,26 +4,19 @@ var Trigger = require('../lib/trigger');
 var http = require('http');
 var should = require('should');
 
-var port = process.env.PORT || 8888;
 
 describe('Trigger', function () {
 
   var trigger_A = new Trigger();
-
+  var port_A = 8888;
+  var address_A = ['localhost', port_A].join(':');
 
   it('Prepare.', function (done) {
 
-
-    var plainHttpServer = http.createServer(function (req, res) {
-    }).listen(port, function () {
+    http.createServer().listen(port_A, function () {
 
       trigger_A.listen(this);
 
-      /*
-      trigger_A.on('message', function (msg) {
-        console.log(msg);
-      });
-*/
       done();
 
     });
@@ -35,10 +28,9 @@ describe('Trigger', function () {
 
     var trigger_B = new Trigger();
 
-    trigger_B.connect(['localhost', port].join(':'), function (err) {
+    trigger_B.connect(address_A, function (err) {
 
       trigger_B.on('message', function (msg) {
-        console.log(msg);
         msg.should.eql('hello');
 
         trigger_B.close(function (err) {
@@ -59,17 +51,15 @@ describe('Trigger', function () {
 
     var count = 0;
 
-    trigger_C.connect(['localhost', port].join(':'), function (err) {
-      trigger_D.connect(['localhost', port].join(':'), function (err) {
+    trigger_C.connect(address_A, function (err) {
+      trigger_D.connect(address_A, function (err) {
 
         trigger_C.on('message', function (msg) {
-          console.log(msg);
           msg.should.eql('hello');
           _done();
         });
 
         trigger_D.on('message', function (msg) {
-          console.log(msg);
           msg.should.eql('hello');
           _done();
         });
@@ -79,6 +69,8 @@ describe('Trigger', function () {
         function _done() {
           count++;
           if (1 < count) {
+            trigger_C.close();
+            trigger_D.close();
             done();
           }
         }
@@ -88,4 +80,28 @@ describe('Trigger', function () {
 
   });
 
+  var trigger_X = new Trigger();
+  var port_X = 8889;
+  var address_X = ['localhost', port_X].join(':');
+
+  it('trigger_X.', function (done) {
+
+    http.createServer().listen(port_X, function () {
+
+      trigger_X.listen(this);
+      trigger_X.connect(address_A, function () {
+
+        trigger_X.on('message', function (msg) {
+          msg.should.eql('hello');
+          done();
+        });
+
+        trigger_A.send('hello');
+
+      });
+
+
+    });
+
+  });
 });
