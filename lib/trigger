@@ -16,22 +16,32 @@ Trigger.prototype.send = function (object, callback) {
 };
 
 Trigger.prototype._send = function (type, object, callback) {
+  var self = this;
+  async.each(this.connections, function (conn, next) {
+    self.__send(conn, type, object, function (err) {
+      next(err);
+    });
+  }, function (err) {
+    callback && callback(err);
+  })
+};
+
+Trigger.prototype.__send = function (conn, type, object, callback) {
   var data = {
     type: type,
     data: object
   };
-  async.each(this.connections, function (conn, next) {
-    conn.sendUTF(JSON.stringify(data));
-    next(null);
-  }, function (err) {
-    callback && callback(err);
-  })
+  conn.sendUTF(JSON.stringify(data));
+  callback && callback(null);
 };
 
 Trigger.prototype.on_message = function (conn, msg) {
   if (msg.type === 'utf8') {
     var data = JSON.parse(msg.utf8Data);
     switch (data.type) {
+      case 'address':
+        this.set_address(conn, data.data);
+        break;
       case 'addresses':
         this.set_addresses(data.data);
         break;
@@ -97,8 +107,15 @@ Trigger.prototype.listen = function (httpServer) {
   this.server.on('request', function (req) {
     var conn = req.accept(null, req.origin);
     self.insert(conn);
-    // addresses を通知する
-    self._send('addresses', self.get_addresses());
+
+    // address を通知する
+    self.__send(conn, 'address', self.address);
+
+    setTimeout(function () {
+      // addresses を通知する
+      self._send('addresses', self.get_addresses());
+    }, 2000);
+
   });
   return this;
 };
@@ -126,40 +143,35 @@ Trigger.prototype.set_addresses = function (new_addresses) {
 };
 
 /**
+ *
+ * @param conn
+ * @param new_address
+ */
+Trigger.prototype.set_address = function (conn, new_address) {
+  var self = this;
+  // 接続時のIPと実際のIPが異なる場合は再接続する
+  if (conn.address !== new_address) {
+    self.remove(conn);
+    conn.close();
+    self.connect(new_address);
+  }
+};
+
+/**
  * websocketサーバに接続する
  * @param address
  * @returns {Trigger}
  */
-Trigger.prototype.connect = function (address, callback) {
+Trigger.prototype.connect = function (address) {
   var self = this;
-  address = check_local(address);
   var client = new websocket.client();
   client.connect('ws://' + address + '/');
   client.on('connect', function (conn) {
-
-
-    // todo
-    // addresses 情報として保存しておく
     conn.address = address;
-
-
     self.insert(conn);
-    callback && callback(null);
   });
   return this;
 };
-
-// localhostの場合にIPアドレスに変換する
-function check_local(address) {
-  var a = address.split(':');
-  switch (a[0]) {
-    case 'localhost':
-    case '127.0.0.1':
-      a[0] = util.getLocalAddress().ipv4[0].address;
-      break;
-  }
-  return a.join(':');
-}
 
 /**
  * Close

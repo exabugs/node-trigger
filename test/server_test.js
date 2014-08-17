@@ -28,19 +28,19 @@ describe('Trigger', function () {
 
     var trigger_B = new Trigger();
 
-    trigger_B.connect(address_A, function (err) {
+    trigger_B.connect(address_A);
 
-      trigger_B.on('message', function (msg) {
-        msg.should.eql('hello');
+    trigger_B.on('message', function (msg) {
+      msg.should.eql('hello');
 
-        trigger_B.close(function (err) {
-          done();
-        });
+      trigger_B.close(function (err) {
+        done();
       });
-
-      trigger_A.send('hello');
-
     });
+
+    setTimeout(function () {
+      trigger_A.send('hello');
+    }, 500);
 
   });
 
@@ -51,32 +51,32 @@ describe('Trigger', function () {
 
     var count = 0;
 
-    trigger_C.connect(address_A, function (err) {
-      trigger_D.connect(address_A, function (err) {
+    trigger_C.connect(address_A);
+    trigger_D.connect(address_A);
 
-        trigger_C.on('message', function (msg) {
-          msg.should.eql('hello');
-          _done();
-        });
-
-        trigger_D.on('message', function (msg) {
-          msg.should.eql('hello');
-          _done();
-        });
-
-        trigger_A.send('hello');
-
-        function _done() {
-          count++;
-          if (1 < count) {
-            trigger_C.close();
-            trigger_D.close();
-            done();
-          }
-        }
-
-      });
+    trigger_C.on('message', function (msg) {
+      msg.should.eql('hello');
+      _done();
     });
+
+    trigger_D.on('message', function (msg) {
+      msg.should.eql('hello');
+      _done();
+    });
+
+    function _done() {
+      count++;
+      if (1 < count) {
+        trigger_C.close();
+        trigger_D.close();
+        done();
+      }
+    }
+
+    setTimeout(function () {
+      trigger_A.send('hello');
+    }, 500);
+
 
   });
 
@@ -89,19 +89,18 @@ describe('Trigger', function () {
     http.createServer().listen(port_X, function () {
 
       trigger_X.listen(this);
-      trigger_X.connect(address_A, function () {
+      trigger_X.connect(address_A);
 
-        trigger_X.on('message', function (msg) {
-          msg.should.eql('hello');
-          done();
-        });
-
-        trigger_A.send('hello');
-
+      trigger_X.on('message', function (msg) {
+        msg.should.eql('hello');
+        done();
       });
-
-
     });
 
+    setTimeout(function () {
+      trigger_A.send('hello');
+    }, 500);
+
   });
+
 });
