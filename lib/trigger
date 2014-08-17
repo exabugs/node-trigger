@@ -7,22 +7,21 @@ var util = require('./util');
 
 var Trigger = function () {
   this.connections = [];
-
-  var self = this;
-  function sendNumber() {
-    var number = Math.round(Math.random() * 0xFFFFFF);
-    self.send(number);
-    setTimeout(sendNumber, 2000);
-  }
-  sendNumber();
 };
 
 Trigger.prototype = Object.create(events.EventEmitter.prototype);
 
 Trigger.prototype.send = function (object, callback) {
-  var msg = JSON.stringify(object);
+  this._send('custom', object, callback);
+};
+
+Trigger.prototype._send = function (type, object, callback) {
+  var data = {
+    type: type,
+    data: object
+  };
   async.each(this.connections, function (conn, next) {
-    conn.sendUTF(msg);
+    conn.sendUTF(JSON.stringify(data));
     next(null);
   }, function (err) {
     callback && callback(err);
@@ -31,7 +30,17 @@ Trigger.prototype.send = function (object, callback) {
 
 Trigger.prototype.on_message = function (conn, msg) {
   if (msg.type === 'utf8') {
-    this.emit('message', JSON.parse(msg.utf8Data));
+    var data = JSON.parse(msg.utf8Data);
+    switch (data.type) {
+      case 'addresses':
+        this.set_addresses(data.data);
+        break;
+      case 'custom':
+        this.emit('message', data.data);
+        break;
+      default:
+        break;
+    }
   }
 };
 
@@ -69,55 +78,96 @@ Trigger.prototype.remove = function (conn) {
 };
 
 function address(httpServer) {
-  var address = httpServer.address();
-  delete address.family;
-  if (address.address === '0.0.0.0') {
-    address.address = util.getLocalAddress().ipv4[0].address;
+  var addr = httpServer.address();
+  if (addr.address === '0.0.0.0') {
+    addr.address = util.getLocalAddress().ipv4[0].address;
   }
-  return address;
+  return [addr.address, addr.port].join(':');
 }
 
+/**
+ * httpServerを元にwebsocketサーバを起動する
+ * @param httpServer
+ * @returns {Trigger}
+ */
 Trigger.prototype.listen = function (httpServer) {
   var self = this;
-
   this.address = address(httpServer);
-
   this.server = new websocket.server({httpServer: httpServer});
   this.server.on('request', function (req) {
-    console.log('WebSocket client connected');
     var conn = req.accept(null, req.origin);
     self.insert(conn);
+    // addresses を通知する
+    self._send('addresses', self.get_addresses());
   });
-
   return this;
 };
 
-Trigger.prototype.connect = function (host) {
+// addresses を取得する
+Trigger.prototype.get_addresses = function () {
+  var addresses = [];
+  this.address && addresses.push(this.address);
+  this.connections.forEach(function (conn) {
+    conn.address && addresses.push(conn.address);
+  });
+  return addresses;
+};
+
+// addresses を設定する
+// 一覧に存在しない場合、新たに接続する
+Trigger.prototype.set_addresses = function (new_addresses) {
   var self = this;
-  var client = new websocket.client();
-  client.connect('ws://' + host + '/');
-  client.on('connect', function (conn) {
-    console.log('WebSocket client connected');
-    self.insert(conn);
+  var addresses = self.get_addresses();
+  new_addresses.forEach(function (address) {
+    if (addresses.indexOf(address) === -1) {
+      self.connect(address);
+    }
   });
 };
 
 /**
- * serverとして起動する
- * @param port
+ * websocketサーバに接続する
+ * @param address
+ * @returns {Trigger}
  */
-Trigger.prototype.createServer = function (port) {
-  var plainHttpServer = http.createServer(function (req, res) {
-    res.writeHead(200, { 'Content-Type': 'text/html'});
-//  res.end(clientHtml);
-  }).listen(port, function () {
+Trigger.prototype.connect = function (address, callback) {
+  var self = this;
+  address = check_local(address);
+  var client = new websocket.client();
+  client.connect('ws://' + address + '/');
+  client.on('connect', function (conn) {
+    // addresses 情報として保存しておく
+    conn.address = address;
+    self.insert(conn);
+    callback && callback(null);
+  });
+  return this;
+};
 
-    trigger.listen(this);
+// localhostの場合にIPアドレスに変換する
+function check_local(address) {
+  var a = address.split(':');
+  switch (a[0]) {
+    case 'localhost':
+    case '127.0.0.1':
+      a[0] = util.getLocalAddress().ipv4[0].address;
+      break;
+  }
+  return a.join(':');
+}
 
-    trigger.on('message', function (msg) {
-      console.log(msg);
-    })
-
+/**
+ * Close
+ * @param callback
+ */
+Trigger.prototype.close = function (callback) {
+  var self = this;
+  async.each(this.connections, function (conn, next) {
+    conn.close();
+    next(null);
+  }, function (err) {
+    self.server && self.server.close();
+    callback(err);
   });
 };
 
