@@ -1,0 +1,39 @@
+{
+  "name": "node-trigger",
+  "version": "0.0.1",
+  "description": "Node trigger using websocket",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test YOURPACKAGE_COVERAGE=1 ./node_modules/.bin/mocha --require blanket --reporter mocha-lcov-reporter | ./node_modules/coveralls/bin/coveralls.js"
+  },
+  "config": {
+    "blanket": {
+      "pattern": "lib",
+      "data-cover-never": "node_modules"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exabugs/node-trigger"
+  },
+  "keywords": [
+    "WebSocket",
+    "Node.js"
+  ],
+  "author": "exabugs@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/exabugs/node-trigger/issues"
+  },
+  "homepage": "https://github.com/exabugs/node-trigger",
+  "devDependencies": {
+    "mocha": "~1.19.0",
+    "should": "~3.3.1",
+    "blanket": "~1.1.6",
+    "coveralls": "~2.10.0",
+    "mocha-lcov-reporter": "~0.0.1"
+  },
+  "dependencies": {
+    "websocket": "^1.0.8"
+  }
+}

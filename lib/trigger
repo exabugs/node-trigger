@@ -1,0 +1,124 @@
+"use strict";
+
+var events = require('events');
+var async = require('async');
+var websocket = require('websocket');
+var util = require('./util');
+
+var Trigger = function () {
+  this.connections = [];
+
+  var self = this;
+  function sendNumber() {
+    var number = Math.round(Math.random() * 0xFFFFFF);
+    self.send(number);
+    setTimeout(sendNumber, 2000);
+  }
+  sendNumber();
+};
+
+Trigger.prototype = Object.create(events.EventEmitter.prototype);
+
+Trigger.prototype.send = function (object, callback) {
+  var msg = JSON.stringify(object);
+  async.each(this.connections, function (conn, next) {
+    conn.sendUTF(msg);
+    next(null);
+  }, function (err) {
+    callback && callback(err);
+  })
+};
+
+Trigger.prototype.on_message = function (conn, msg) {
+  if (msg.type === 'utf8') {
+    this.emit('message', JSON.parse(msg.utf8Data));
+  }
+};
+
+Trigger.prototype.on_error = function (conn, error) {
+  this.emit('error', error);
+};
+
+Trigger.prototype.on_close = function (conn, code, desc) {
+  this.emit('close', code, desc);
+};
+
+Trigger.prototype.insert = function (conn) {
+
+  var self = this;
+
+  conn.on('error', function (error) {
+    self.on_error(conn, error);
+  });
+
+  conn.on('message', function (msg) {
+    self.on_message(conn, msg);
+  });
+
+  conn.on('close', function (code, desc) {
+    self.remove(conn);
+    self.on_close(conn, code, desc);
+  });
+
+  this.connections.push(conn);
+};
+
+Trigger.prototype.remove = function (conn) {
+  var index = this.connections.indexOf(conn);
+  0 <= index && this.connections.splice(index, 1);
+};
+
+function address(httpServer) {
+  var address = httpServer.address();
+  delete address.family;
+  if (address.address === '0.0.0.0') {
+    address.address = util.getLocalAddress().ipv4[0].address;
+  }
+  return address;
+}
+
+Trigger.prototype.listen = function (httpServer) {
+  var self = this;
+
+  this.address = address(httpServer);
+
+  this.server = new websocket.server({httpServer: httpServer});
+  this.server.on('request', function (req) {
+    console.log('WebSocket client connected');
+    var conn = req.accept(null, req.origin);
+    self.insert(conn);
+  });
+
+  return this;
+};
+
+Trigger.prototype.connect = function (host) {
+  var self = this;
+  var client = new websocket.client();
+  client.connect('ws://' + host + '/');
+  client.on('connect', function (conn) {
+    console.log('WebSocket client connected');
+    self.insert(conn);
+  });
+};
+
+/**
+ * serverとして起動する
+ * @param port
+ */
+Trigger.prototype.createServer = function (port) {
+  var plainHttpServer = http.createServer(function (req, res) {
+    res.writeHead(200, { 'Content-Type': 'text/html'});
+//  res.end(clientHtml);
+  }).listen(port, function () {
+
+    trigger.listen(this);
+
+    trigger.on('message', function (msg) {
+      console.log(msg);
+    })
+
+  });
+};
+
+module.exports = Trigger;
