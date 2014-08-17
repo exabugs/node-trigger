@@ -39,8 +39,11 @@ Trigger.prototype.on_message = function (conn, msg) {
   if (msg.type === 'utf8') {
     var data = JSON.parse(msg.utf8Data);
     switch (data.type) {
-      case 'address':
-        this.set_address(conn, data.data);
+      case 'server_address':
+        this.server_address(conn, data.data);
+        break;
+      case 'client_address':
+        this.client_address(conn, data.data);
         break;
       case 'addresses':
         this.set_addresses(data.data);
@@ -107,27 +110,29 @@ Trigger.prototype.listen = function (httpServer) {
   this.server.on('request', function (req) {
     var conn = req.accept(null, req.origin);
     self.insert(conn);
+    conn.server_address = self.address;
 
     // address を通知する
-    self.__send(conn, 'address', self.address);
-
-    setTimeout(function () {
-      // addresses を通知する
-      self._send('addresses', self.get_addresses());
-    }, 2000);
-
+    self.__send(conn, 'server_address', self.address);
   });
+
+  setInterval(function () {
+    // addresses を通知する
+    self._send('addresses', self.get_addresses());
+  }, 2000);
+
   return this;
 };
 
-// addresses を取得する
+// 接続可能な server_addresses を取得する
 Trigger.prototype.get_addresses = function () {
-  var addresses = [];
-  this.address && addresses.push(this.address);
+  var addresses = {};
+  this.address && (addresses[this.address] = 1);
   this.connections.forEach(function (conn) {
-    conn.address && addresses.push(conn.address);
+    conn.server_address && (addresses[conn.server_address] = 1);
+    conn.client_address && (addresses[conn.client_address] = 1);
   });
-  return addresses;
+  return Object.keys(addresses);
 };
 
 // addresses を設定する
@@ -147,13 +152,24 @@ Trigger.prototype.set_addresses = function (new_addresses) {
  * @param conn
  * @param new_address
  */
-Trigger.prototype.set_address = function (conn, new_address) {
+Trigger.prototype.server_address = function (conn, server_address) {
   var self = this;
   // 接続時のIPと実際のIPが異なる場合は再接続する
-  if (conn.address !== new_address) {
+  if (conn.server_address !== server_address) {
     self.remove(conn);
     conn.close();
-    self.connect(new_address);
+    self.connect(server_address);
+  } else {
+    // address を通知する
+    self.__send(conn, 'client_address', self.address);
+  }
+};
+
+Trigger.prototype.client_address = function (conn, client_address) {
+  var self = this;
+  // 接続時のIPと実際のIPが異なる場合は再接続する
+  if (conn.client_address !== client_address) {
+    conn.client_address = client_address;
   }
 };
 
@@ -167,7 +183,8 @@ Trigger.prototype.connect = function (address) {
   var client = new websocket.client();
   client.connect('ws://' + address + '/');
   client.on('connect', function (conn) {
-    conn.address = address;
+    conn.server_address = address;
+    conn.client_address = self.address;
     self.insert(conn);
   });
   return this;
