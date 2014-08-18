@@ -11,8 +11,8 @@ var Trigger = function () {
 
 Trigger.prototype = Object.create(events.EventEmitter.prototype);
 
-Trigger.prototype.send = function (object, callback) {
-  this._send('custom', object, callback);
+Trigger.prototype.send = function (method, object, callback) {
+  this._send(method, object, callback);
 };
 
 Trigger.prototype._send = function (type, object, callback) {
@@ -29,7 +29,9 @@ Trigger.prototype._send = function (type, object, callback) {
 Trigger.prototype.__send = function (conn, type, object, callback) {
   var data = {
     type: type,
-    data: object
+    data: object,
+    timestamp: (new Date()).getTime(),
+    address: this.address
   };
   conn.sendUTF(JSON.stringify(data));
   callback && callback(null);
@@ -39,19 +41,22 @@ Trigger.prototype.on_message = function (conn, msg) {
   if (msg.type === 'utf8') {
     var data = JSON.parse(msg.utf8Data);
     switch (data.type) {
-      case 'server_address':
+      case '$server_address':
         this.server_address(conn, data.data);
         break;
-      case 'client_address':
+      case '$client_address':
         this.client_address(conn, data.data);
         break;
-      case 'addresses':
+      case '$addresses':
         this.set_addresses(data.data);
         break;
-      case 'custom':
-        this.emit('message', data.data);
-        break;
       default:
+        var option = {
+          socket: conn,
+          timestamp: data.timestamp,
+          address: data.address
+        };
+        this.emit(data.type, data.data, option);
         break;
     }
   }
@@ -113,12 +118,12 @@ Trigger.prototype.listen = function (httpServer) {
     conn.server_address = self.address;
 
     // address を通知する
-    self.__send(conn, 'server_address', self.address);
+    self.__send(conn, '$server_address', self.address);
   });
 
   setInterval(function () {
     // addresses を通知する
-    self._send('addresses', self.get_addresses());
+    self._send('$addresses', self.get_addresses());
   }, 10000);
 
   return this;
@@ -161,7 +166,7 @@ Trigger.prototype.server_address = function (conn, server_address) {
     self.connect(server_address);
   } else {
     // address を通知する
-    self.__send(conn, 'client_address', self.address);
+    self.__send(conn, '$client_address', self.address);
   }
 };
 

@@ -39,7 +39,7 @@ describe('Trigger', function () {
     });
 
     setTimeout(function () {
-      trigger_A.send('hello');
+      trigger_A.send('message', 'hello');
     }, 500);
 
   });
@@ -74,7 +74,7 @@ describe('Trigger', function () {
     }
 
     setTimeout(function () {
-      trigger_A.send('hello');
+      trigger_A.send('message', 'hello');
     }, 500);
 
 
@@ -91,14 +91,18 @@ describe('Trigger', function () {
       trigger_X.listen(this);
       trigger_X.connect(address_A);
 
-      trigger_X.on('message', function (msg) {
-        msg.should.eql('hello');
+      trigger_X.on('greeting', function (msg, option) {
+        // JSONをそのまま受信可能
+        // option.socketは通信に使用されたwebsocket
+        console.log(option.socket.server_address);
+        msg.title.should.eql('hello');
         done();
       });
     });
 
     setTimeout(function () {
-      trigger_A.send('hello');
+      // JSONをそのまま送信可能
+      trigger_A.send('greeting', {title: 'hello'});
     }, 500);
 
   });
