@@ -119,7 +119,7 @@ Trigger.prototype.listen = function (httpServer) {
   setInterval(function () {
     // addresses を通知する
     self._send('addresses', self.get_addresses());
-  }, 2000);
+  }, 10000);
 
   return this;
 };
