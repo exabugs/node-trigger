@@ -3,12 +3,12 @@ node-trigger
 
 MeCab connector for Node.js
 
-[![Build Status](https://secure.travis-ci.org/exabugs/node-wakame.png?branch=master)](http://travis-ci.org/exabugs/node-wakame)
-[![Coverage Status](https://coveralls.io/repos/exabugs/node-wakame/badge.png?branch=master)](https://coveralls.io/r/exabugs/node-wakame?branch=master)
-[![Code Climate](https://codeclimate.com/github/exabugs/node-wakame.png)](https://codeclimate.com/github/exabugs/node-wakame)
-[![Dependency Status](https://david-dm.org/exabugs/node-wakame.png)](https://david-dm.org/exabugs/node-wakame)
+[![Build Status](https://secure.travis-ci.org/exabugs/node-trigger.png?branch=master)](http://travis-ci.org/exabugs/node-trigger)
+[![Coverage Status](https://coveralls.io/repos/exabugs/node-trigger/badge.png?branch=master)](https://coveralls.io/r/exabugs/node-trigger?branch=master)
+[![Code Climate](https://codeclimate.com/github/exabugs/node-trigger.png)](https://codeclimate.com/github/exabugs/node-trigger)
+[![Dependency Status](https://david-dm.org/exabugs/node-trigger.png)](https://david-dm.org/exabugs/node-trigger)
 
-[![NPM](https://nodei.co/npm/node-wakame.png?stars&downloads)](https://nodei.co/npm/node-wakame/) [![NPM](https://nodei.co/npm-dl/node-wakame.png)](https://nodei.co/npm/node-wakame/)
+[![NPM](https://nodei.co/npm/node-trigger.png?stars&downloads)](https://nodei.co/npm/node-trigger/) [![NPM](https://nodei.co/npm-dl/node-trigger.png)](https://nodei.co/npm/node-trigger/)
 
 System Requirements
 -----
@@ -25,13 +25,13 @@ EOS
 Usage
 -----
 
-Installation command is `npm install node-wakame`.
+Installation command is `npm install node-trigger`.
 
 ### Quick example
 
 ```javascript
 var should = require("should")
-  , MeCab = require('node-wakame').MeCab
+  , MeCab = require('node-trigger').MeCab
   ;
 
     var process = MeCab.parse("今日は残業。明日も残業。");
