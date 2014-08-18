@@ -4,7 +4,7 @@ node-trigger
 MeCab connector for Node.js
 
 [![Build Status](https://secure.travis-ci.org/exabugs/node-trigger.png?branch=master)](http://travis-ci.org/exabugs/node-trigger)
-[![Coverage Status](https://img.shields.io/coveralls/exabugs/node-trigger.svg)](https://coveralls.io/r/exabugs/node-trigger?branch=master)
+[![Coverage Status](https://coveralls.io/repos/exabugs/node-trigger/badge.png?branch=master)](https://coveralls.io/r/exabugs/node-trigger?branch=master)
 [![Code Climate](https://codeclimate.com/github/exabugs/node-trigger.png)](https://codeclimate.com/github/exabugs/node-trigger)
 [![Dependency Status](https://david-dm.org/exabugs/node-trigger.png)](https://david-dm.org/exabugs/node-trigger)
 
