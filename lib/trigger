@@ -117,7 +117,7 @@ Trigger.prototype.listen = function (httpServer) {
     self.insert(conn);
     conn.server_address = self.address;
 
-    // address を通知する
+    // server_address を通知する
     self.__send(conn, '$server_address', self.address);
   });
 
@@ -160,12 +160,13 @@ Trigger.prototype.set_addresses = function (new_addresses) {
 Trigger.prototype.server_address = function (conn, server_address) {
   var self = this;
   // 接続時のIPと実際のIPが異なる場合は再接続する
+  // (ローカルネットワークからの接続しか許可しない)
   if (conn.server_address !== server_address) {
     self.remove(conn);
     conn.close();
     self.connect(server_address);
   } else {
-    // address を通知する
+    // client_address を通知する
     self.__send(conn, '$client_address', self.address);
   }
 };
